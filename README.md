@@ -64,16 +64,12 @@ Traditional RAG (Retrieval-Augmented Generation) for code has fundamental limita
 ### Installation
 
 ```bash
-pip install codetree-rag
-```
-
-Or from source:
-
-```bash
 git clone https://github.com/toller892/Oh-Code-Rag.git
 cd Oh-Code-Rag
 pip install -e .
 ```
+
+<!-- Coming soon: pip install codetree-rag -->
 
 ### Configuration
 
