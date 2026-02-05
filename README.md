@@ -367,6 +367,42 @@ We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ---
 
+## 🔌 MCP Server (Claude Desktop & More)
+
+CodeTree works as an MCP (Model Context Protocol) server, compatible with Claude Desktop, Cline, Continue, and other MCP clients.
+
+### Setup for Claude Desktop
+
+Add to your Claude Desktop config:
+
+```json
+{
+  "mcpServers": {
+    "codetree": {
+      "command": "python",
+      "args": ["/path/to/Oh-Code-Rag/mcp/server.py"],
+      "env": {
+        "OPENAI_API_KEY": "sk-your-key-here"
+      }
+    }
+  }
+}
+```
+
+### MCP Tools
+
+| Tool | Description |
+|------|-------------|
+| `codetree_index` | Index a repository |
+| `codetree_query` | Ask questions about code |
+| `codetree_tree` | Show code structure |
+| `codetree_find` | Find symbol references |
+| `codetree_stats` | Get repo statistics |
+
+See `mcp/README.md` for full documentation.
+
+---
+
 ## 🤖 Clawdbot Skill
 
 CodeTree also comes as a Clawdbot skill for AI assistant integration.
