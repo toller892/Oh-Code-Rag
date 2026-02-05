@@ -1,18 +1,12 @@
-<![CDATA[<div align="center">
-
 # 🌲 CodeTree
 
-### Vectorless RAG for Code Repositories
+**Vectorless RAG for Code Repositories**
 
-**Navigate your codebase like a human expert — using LLM reasoning, not vector similarity.**
+> Navigate your codebase like a human expert — using LLM reasoning, not vector similarity.
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 [![GitHub stars](https://img.shields.io/github/stars/toller892/Oh-Code-Rag?style=social)](https://github.com/toller892/Oh-Code-Rag)
-
-[Features](#-features) • [Quick Start](#-quick-start) • [Use Cases](#-use-cases) • [How It Works](#-how-it-works) • [Examples](#-real-world-examples)
-
-</div>
 
 ---
 
@@ -20,67 +14,38 @@
 
 Traditional RAG (Retrieval-Augmented Generation) for code has fundamental limitations:
 
-```
-❌ Vector similarity ≠ Code relevance
-   "login" and "logout" have similar embeddings, but they're completely different!
-
-❌ Chunking destroys code structure  
-   Splitting a class across chunks loses critical context
-
-❌ Can't follow the call chain
-   "Who calls this function?" is nearly impossible with vectors
-
-❌ No understanding of code architecture
-   Vectors don't know that auth/ is for authentication
-```
+| Problem | Description |
+|---------|-------------|
+| ❌ **Vector similarity ≠ Code relevance** | "login" and "logout" have similar embeddings, but they're completely different! |
+| ❌ **Chunking destroys structure** | Splitting a class across chunks loses critical context |
+| ❌ **Can't follow call chains** | "Who calls this function?" is nearly impossible with vectors |
+| ❌ **No architecture understanding** | Vectors don't know that `auth/` is for authentication |
 
 ## 💡 The Solution
 
 **CodeTree** takes a different approach — it builds a hierarchical tree index of your codebase and uses **LLM reasoning** to navigate it, just like a human developer would:
 
-```
-✅ AST-based parsing preserves code structure
-✅ LLM reasons about which files are relevant  
-✅ Understands module relationships and dependencies
-✅ Can trace function calls across files
-```
+- ✅ AST-based parsing preserves code structure
+- ✅ LLM reasons about which files are relevant  
+- ✅ Understands module relationships and dependencies
+- ✅ Can trace function calls across files
 
 ---
 
 ## ✨ Features
 
-<table>
-<tr>
-<td width="50%">
-
-### 🚫 No Vector Database
-Uses code structure + LLM reasoning instead of embedding similarity. No Pinecone, no Milvus, no ChromaDB needed.
-
-### 🌳 AST-Based Indexing  
-Parses actual code structure — functions, classes, imports, dependencies. Not just text chunks.
-
-### 🔗 Cross-File Intelligence
-Tracks imports, function calls, and dependencies across your entire codebase.
-
-</td>
-<td width="50%">
-
-### 🧠 Reasoning-Based Retrieval
-LLM navigates the code tree like a human expert, finding relevant code through logical reasoning.
-
-### 💬 Natural Language Queries
-Ask questions in plain English: "How does authentication work?" or "Where is the database connection?"
-
-### 🔒 Privacy-First
-Works with local models (Ollama). Your code never leaves your machine.
-
-</td>
-</tr>
-</table>
+| Feature | Description |
+|---------|-------------|
+| 🚫 **No Vector Database** | Uses code structure + LLM reasoning instead of embedding similarity |
+| 🌳 **AST-Based Indexing** | Parses actual code structure — functions, classes, imports, dependencies |
+| 🔗 **Cross-File Intelligence** | Tracks imports, function calls, and dependencies across your entire codebase |
+| 🧠 **Reasoning-Based Retrieval** | LLM navigates the code tree like a human expert |
+| 💬 **Natural Language Queries** | Ask questions in plain English |
+| 🔒 **Privacy-First** | Works with local models (Ollama). Your code never leaves your machine |
 
 ---
 
-## 📊 Comparison
+## 📊 Comparison: Vector RAG vs CodeTree
 
 | Feature | Vector RAG | CodeTree |
 |---------|:----------:|:--------:|
@@ -103,6 +68,7 @@ pip install codetree-rag
 ```
 
 Or from source:
+
 ```bash
 git clone https://github.com/toller892/Oh-Code-Rag.git
 cd Oh-Code-Rag
@@ -112,6 +78,7 @@ pip install -e .
 ### Configuration
 
 Set your LLM API key:
+
 ```bash
 export OPENAI_API_KEY="sk-..."
 # or
@@ -157,30 +124,15 @@ codetree find "UserService"
 
 ### 👨‍💻 For Developers
 
-<table>
-<tr>
-<td>
+**Onboarding to New Codebases:**
+- "What's the overall architecture of this project?"
+- "How do requests flow from API to database?"
+- "Where should I add a new payment method?"
 
-**Onboarding to New Codebases**
-```
-Q: "What's the overall architecture of this project?"
-Q: "How do requests flow from API to database?"
-Q: "Where should I add a new payment method?"
-```
-
-</td>
-<td>
-
-**Code Review & Understanding**
-```
-Q: "What does the processOrder function do?"
-Q: "Who calls the validateUser method?"
-Q: "What happens if authentication fails?"
-```
-
-</td>
-</tr>
-</table>
+**Code Review & Understanding:**
+- "What does the processOrder function do?"
+- "Who calls the validateUser method?"
+- "What happens if authentication fails?"
 
 ### 🏢 Industry Applications
 
@@ -205,6 +157,8 @@ Q: "What happens if authentication fails?"
 
 ### Example 1: Understanding Project Architecture
 
+**Query:**
+
 ```python
 from codetree import CodeTree
 
@@ -212,10 +166,12 @@ tree = CodeTree("./my-project")
 tree.build_index()
 
 answer = tree.query("What's the overall architecture? What are the core modules?")
+print(answer)
 ```
 
 **Output:**
-```markdown
+
+```
 ## Project Architecture
 
 This project follows a modular architecture with these core components:
@@ -243,12 +199,15 @@ User Query → CodeTree → Retriever → LLM Reasoning → File Selection → A
 
 ### Example 2: Finding Function Usage
 
+**Query:**
+
 ```python
-# Find all references to "authenticate"
 refs = tree.find("authenticate")
+print(refs)
 ```
 
 **Output:**
+
 ```
 📍 Found 5 references to 'authenticate':
 
@@ -261,28 +220,28 @@ refs = tree.find("authenticate")
 
 ### Example 3: Tracing Code Flow
 
+**Query:**
+
 ```python
 answer = tree.query("How does a user login request flow through the system?")
+print(answer)
 ```
 
 **Output:**
-```markdown
+
+```
 ## Login Request Flow
 
 1. **Entry Point**: `src/api/routes.py`
-   ```python
-   @app.post("/login")
-   def login(credentials: LoginRequest):
-       return auth_service.authenticate(credentials)
-   ```
+   - @app.post("/login") routes to auth_service.authenticate()
 
 2. **Authentication**: `src/auth/service.py`
    - Validates credentials against database
    - Generates JWT token on success
    
 3. **Database**: `src/db/users.py`
-   - `get_user_by_email()` fetches user record
-   - `verify_password()` checks hash
+   - get_user_by_email() fetches user record
+   - verify_password() checks hash
 
 4. **Response**: Returns JWT token or 401 error
 ```
@@ -291,76 +250,63 @@ answer = tree.query("How does a user login request flow through the system?")
 
 ## 🏗️ How It Works
 
-### Architecture
+### Architecture Overview
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                         CodeTree                                 │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐      │
-│  │  CodeParser  │───▶│ CodeIndexer  │───▶│  CodeIndex   │      │
-│  │              │    │              │    │  (JSON)      │      │
-│  │ • Python     │    │ • Directory  │    │              │      │
-│  │ • JavaScript │    │   traversal  │    │ • TreeNodes  │      │
-│  │ • Go, Rust   │    │ • AST parse  │    │ • Functions  │      │
-│  │ • Java       │    │ • Build tree │    │ • Classes    │      │
-│  └──────────────┘    └──────────────┘    └──────────────┘      │
-│                                                  │               │
-│                                                  ▼               │
-│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐      │
-│  │   Answer     │◀───│   Retrieve   │◀───│ CodeRetriever│      │
-│  │              │    │   Files      │    │              │      │
-│  │ • Markdown   │    │              │    │ • LLM Client │      │
-│  │ • Code refs  │    │ • Read code  │    │ • Reasoning  │      │
-│  │ • Examples   │    │ • Context    │    │ • Navigation │      │
-│  └──────────────┘    └──────────────┘    └──────────────┘      │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                        CodeTree                              │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│   CodeParser ──────▶ CodeIndexer ──────▶ CodeIndex (JSON)   │
+│   (AST Parse)        (Build Tree)        (Store)            │
+│                                              │               │
+│                                              ▼               │
+│   Answer ◀────────── Retrieve ◀────────── CodeRetriever    │
+│   (Markdown)         (Read Files)         (LLM Reasoning)   │
+│                                                              │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ### Two-Stage Retrieval Process
 
-```
-Stage 1: Reasoning-Based Navigation
-┌─────────────────────────────────────────────────────────────┐
-│ User: "How does authentication work?"                        │
-│                           │                                  │
-│                           ▼                                  │
-│ ┌─────────────────────────────────────────────────────────┐ │
-│ │ LLM analyzes code tree structure:                       │ │
-│ │                                                         │ │
-│ │ "Authentication relates to auth module...              │ │
-│ │  Let me check src/auth/ directory...                   │ │
-│ │  login.py and oauth.py look relevant...                │ │
-│ │  Also need to check who imports these..."              │ │
-│ └─────────────────────────────────────────────────────────┘ │
-│                           │                                  │
-│                           ▼                                  │
-│ Selected: [src/auth/login.py, src/auth/oauth.py,            │
-│            src/middleware/auth.py]                           │
-└─────────────────────────────────────────────────────────────┘
+**Stage 1: Reasoning-Based Navigation**
 
-Stage 2: Answer Generation  
+```
+User: "How does authentication work?"
+                    │
+                    ▼
 ┌─────────────────────────────────────────────────────────────┐
-│ Read selected files → Generate comprehensive answer          │
-│ with code snippets and explanations                          │
+│ LLM analyzes code tree structure:                           │
+│                                                             │
+│ "Authentication relates to auth module...                   │
+│  Let me check src/auth/ directory...                        │
+│  login.py and oauth.py look relevant...                     │
+│  Also need to check who imports these..."                   │
 └─────────────────────────────────────────────────────────────┘
+                    │
+                    ▼
+Selected Files: [src/auth/login.py, src/auth/oauth.py, ...]
+```
+
+**Stage 2: Answer Generation**
+
+```
+Read selected files → Generate comprehensive answer with code snippets
 ```
 
 ---
 
 ## 🗣️ Supported Languages
 
-| Language | Extensions | Parser Status |
-|----------|------------|:-------------:|
+| Language | Extensions | Status |
+|----------|------------|:------:|
 | Python | `.py`, `.pyi` | ✅ Full |
 | JavaScript | `.js`, `.jsx`, `.mjs` | ✅ Full |
 | TypeScript | `.ts`, `.tsx` | ✅ Full |
 | Go | `.go` | ✅ Full |
 | Rust | `.rs` | ✅ Full |
 | Java | `.java` | ✅ Full |
-| C/C++ | `.c`, `.cpp`, `.h` | 🚧 Coming |
+| C/C++ | `.c`, `.cpp`, `.h` | 🚧 Coming Soon |
 
 ---
 
@@ -437,11 +383,10 @@ Inspired by [PageIndex](https://github.com/VectifyAI/PageIndex) — vectorless R
 
 ---
 
-<div align="center">
-
-**If you find CodeTree useful, please give us a ⭐!**
+## ⭐ Star History
 
 [![Star History Chart](https://api.star-history.com/svg?repos=toller892/Oh-Code-Rag&type=Date)](https://star-history.com/#toller892/Oh-Code-Rag&Date)
 
-</div>
-]]>
+---
+
+**If you find CodeTree useful, please give us a ⭐!**
