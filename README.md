@@ -367,6 +367,38 @@ We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ---
 
+## 🤖 Clawdbot Skill
+
+CodeTree also comes as a Clawdbot skill for AI assistant integration.
+
+### Install Skill
+
+Copy the `skill/` folder to your Clawdbot skills directory:
+
+```bash
+cp -r skill/ ~/.clawdbot/skills/codetree/
+```
+
+### Skill Commands
+
+```bash
+# Index a repo
+./scripts/codetree.sh index /path/to/repo
+
+# Query code
+./scripts/codetree.sh query /path/to/repo "How does auth work?"
+
+# Show structure
+./scripts/codetree.sh tree /path/to/repo
+
+# Find symbol
+./scripts/codetree.sh find /path/to/repo "UserService"
+```
+
+See `skill/SKILL.md` for full documentation.
+
+---
+
 ## 📄 License
 
 MIT License - see [LICENSE](LICENSE) for details.

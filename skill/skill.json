@@ -1,0 +1,15 @@
+{
+  "name": "codetree",
+  "version": "0.1.0",
+  "description": "Query code repositories using natural language with vectorless RAG",
+  "author": "Tony",
+  "repository": "https://github.com/toller892/Oh-Code-Rag",
+  "keywords": ["code", "rag", "search", "query", "ast", "llm"],
+  "scripts": {
+    "codetree": "scripts/codetree.sh"
+  },
+  "dependencies": {
+    "python": ">=3.10",
+    "packages": ["openai", "anthropic", "pyyaml", "rich", "click"]
+  }
+}
