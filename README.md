@@ -64,12 +64,16 @@ Traditional RAG (Retrieval-Augmented Generation) for code has fundamental limita
 ### Installation
 
 ```bash
+pip install codetree-rag
+```
+
+Or from source:
+
+```bash
 git clone https://github.com/toller892/Oh-Code-Rag.git
 cd Oh-Code-Rag
 pip install -e .
 ```
-
-<!-- Coming soon: pip install codetree-rag -->
 
 ### Configuration
 
@@ -371,6 +375,12 @@ We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 CodeTree works as an MCP (Model Context Protocol) server, compatible with Claude Desktop, Cline, Continue, and other MCP clients.
 
+### Installation
+
+```bash
+pip install codetree-mcp
+```
+
 ### Setup for Claude Desktop
 
 Add to your Claude Desktop config:
@@ -407,9 +417,13 @@ See `mcp/README.md` for full documentation.
 
 CodeTree also comes as a Clawdbot skill for AI assistant integration.
 
-### Install Skill
+### Installation
 
-Copy the `skill/` folder to your Clawdbot skills directory:
+```bash
+pip install codetree-skill
+```
+
+Or copy the `skill/` folder to your Clawdbot skills directory:
 
 ```bash
 cp -r skill/ ~/.clawdbot/skills/codetree/
