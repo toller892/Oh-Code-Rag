@@ -100,7 +100,51 @@ class CodeTree:
         Returns:
             List of references found
         """
-        return self.retriever.find_references(symbol)
+        if self.index is None:
+            raise RuntimeError("No index available. Run build_index() first.")
+        return self._find_references(symbol)
+    
+    def _find_references(self, symbol: str) -> list[dict]:
+        """Find all references to a symbol across the codebase (no LLM needed)."""
+        from .indexer import TreeNode
+        references = []
+        
+        def search_node(node: TreeNode):
+            if node.type == "file":
+                # Check functions
+                for func in node.functions:
+                    if symbol.lower() in func.get("name", "").lower():
+                        references.append({
+                            "type": "function",
+                            "file": node.path,
+                            "name": func["name"],
+                            "line": func.get("line"),
+                        })
+                
+                # Check classes
+                for cls in node.classes:
+                    if symbol.lower() in cls.get("name", "").lower():
+                        references.append({
+                            "type": "class",
+                            "file": node.path,
+                            "name": cls["name"],
+                            "line": cls.get("line"),
+                        })
+                
+                # Check imports
+                for imp in node.imports:
+                    if symbol.lower() in imp.lower():
+                        references.append({
+                            "type": "import",
+                            "file": node.path,
+                            "statement": imp,
+                        })
+            else:
+                for child in node.children:
+                    search_node(child)
+        
+        search_node(self.index.root)
+        return references
     
     def tree(self, max_depth: int = 3) -> str:
         """
