@@ -6,6 +6,8 @@ from typing import Optional
 from .config import Config
 from .indexer import CodeIndexer, CodeIndex
 from .retriever import CodeRetriever
+from .incremental import IncrementalIndexer
+from .progress import ProgressTracker, SilentProgressTracker
 
 
 class CodeTree:
@@ -22,6 +24,7 @@ class CodeTree:
         self, 
         repo_path: str | Path,
         config: Optional[Config] = None,
+        verbose: bool = False,
     ):
         """
         Initialize CodeTree for a repository.
@@ -29,10 +32,13 @@ class CodeTree:
         Args:
             repo_path: Path to the repository to index
             config: Optional configuration object
+            verbose: Enable verbose logging
         """
         self.repo_path = Path(repo_path).resolve()
         self.config = config or Config.load()
+        self.verbose = verbose
         self.indexer = CodeIndexer(self.config)
+        self.incremental = IncrementalIndexer(self.repo_path)
         self._index: Optional[CodeIndex] = None
         self._retriever: Optional[CodeRetriever] = None
         
@@ -60,23 +66,57 @@ class CodeTree:
             self._retriever = CodeRetriever(self.index, self.config)
         return self._retriever
     
-    def build_index(self, save: bool = True) -> CodeIndex:
+    def build_index(self, save: bool = True, incremental: bool = True, show_progress: bool = True) -> CodeIndex:
         """
         Build the code index for the repository.
         
         Args:
             save: Whether to save the index to disk
+            incremental: Use incremental indexing (only re-index changed files)
+            show_progress: Show progress bar
             
         Returns:
             The built CodeIndex
         """
-        self._index = self.indexer.build_index(self.repo_path)
-        self._retriever = None  # Reset retriever
+        progress = ProgressTracker(self.verbose) if show_progress else SilentProgressTracker()
         
-        if save:
-            self.indexer.save_index(self._index, self._index_path)
+        try:
+            if incremental and self._index_path.exists():
+                progress.info("Using incremental indexing...")
+                self._index = self.indexer.build_index_incremental(
+                    self.repo_path,
+                    self.incremental,
+                    progress,
+                )
+            else:
+                progress.info("Building full index...")
+                self._index = self.indexer.build_index(self.repo_path, progress)
+            
+            self._retriever = None  # Reset retriever
+            
+            if save:
+                progress.info("Saving index...")
+                self.indexer.save_index(self._index, self._index_path)
+                self.incremental.save_metadata()
+            
+            progress.success("Index built successfully!")
+            progress.print_summary()
+            
+            return self._index
+        finally:
+            progress.finish()
+    
+    def update_index(self, show_progress: bool = True) -> CodeIndex:
+        """
+        Update the index incrementally (alias for build_index with incremental=True).
         
-        return self._index
+        Args:
+            show_progress: Show progress bar
+            
+        Returns:
+            The updated CodeIndex
+        """
+        return self.build_index(save=True, incremental=True, show_progress=show_progress)
     
     def query(self, question: str) -> str:
         """
