@@ -7,6 +7,7 @@ from typing import Optional
 from .config import Config
 from .indexer import CodeIndex, TreeNode
 from .llm import create_llm_client, LLMClient
+from .extractor import extract_code_smart
 
 
 RETRIEVAL_SYSTEM_PROMPT = """You are a code navigation expert. Your task is to analyze a code repository structure and identify the most relevant files and code sections to answer a user's question.
@@ -96,21 +97,13 @@ Analyze the repository structure and identify the most relevant files to answer 
         if not full_path.exists():
             return None
         
-        try:
-            content = full_path.read_text(encoding="utf-8")
-        except (UnicodeDecodeError, IOError):
-            return None
-        
-        # If no focus specified, return full content (truncated)
-        if not focus:
-            lines = content.split("\n")
-            if len(lines) > 200:
-                return "\n".join(lines[:200]) + f"\n\n... ({len(lines) - 200} more lines)"
-            return content
-        
-        # TODO: Extract only focused sections
-        # For now, return full content
-        return content
+        # Use smart extractor
+        return extract_code_smart(
+            full_path,
+            focus=focus,
+            max_lines=200,
+            include_imports=True,
+        )
     
     def query(self, question: str) -> str:
         """Query the codebase and get an answer."""

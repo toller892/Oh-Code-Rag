@@ -176,7 +176,7 @@ class CodeIndexer:
             "languages": {},
         }
     
-    def build_index(self, repo_path: Path) -> CodeIndex:
+    def build_index(self, repo_path: Path, progress=None) -> CodeIndex:
         """Build a code index from the repository."""
         repo_path = Path(repo_path).resolve()
         
@@ -189,7 +189,13 @@ class CodeIndexer:
             "languages": {},
         }
         
-        root = self._index_directory(repo_path, repo_path)
+        if progress:
+            progress.start(description="Scanning repository...")
+        
+        root = self._index_directory(repo_path, repo_path, progress)
+        
+        if progress:
+            progress.finish()
         
         return CodeIndex(
             root=root,
@@ -200,7 +206,7 @@ class CodeIndexer:
             languages=self._stats["languages"],
         )
     
-    def _index_directory(self, dir_path: Path, repo_root: Path) -> TreeNode:
+    def _index_directory(self, dir_path: Path, repo_root: Path, progress=None) -> TreeNode:
         """Recursively index a directory."""
         relative_path = dir_path.relative_to(repo_root)
         
@@ -218,12 +224,12 @@ class CodeIndexer:
                 continue
             
             if entry.is_dir():
-                child_node = self._index_directory(entry, repo_root)
+                child_node = self._index_directory(entry, repo_root, progress)
                 if child_node.children or child_node.type == "file":
                     children.append(child_node)
                     file_count += child_node.file_count
             elif entry.is_file():
-                child_node = self._index_file(entry, repo_root)
+                child_node = self._index_file(entry, repo_root, progress)
                 if child_node:
                     children.append(child_node)
                     file_count += 1
@@ -236,13 +242,19 @@ class CodeIndexer:
             file_count=file_count,
         )
     
-    def _index_file(self, file_path: Path, repo_root: Path) -> Optional[TreeNode]:
+    def _index_file(self, file_path: Path, repo_root: Path, progress=None) -> Optional[TreeNode]:
         """Index a single file."""
         relative_path = file_path.relative_to(repo_root)
+        
+        if progress:
+            progress.update(1)
+            progress.increment_stat("files_scanned")
         
         # Check file size
         try:
             if file_path.stat().st_size > self.config.index.max_file_size:
+                if progress:
+                    progress.increment_stat("files_skipped")
                 return None
         except OSError:
             return None
@@ -250,20 +262,30 @@ class CodeIndexer:
         # Check if it's a supported language
         language = self.parser.detect_language(file_path)
         if not language:
+            if progress:
+                progress.increment_stat("files_skipped")
             return None
         
         if language not in self.config.index.languages:
+            if progress:
+                progress.increment_stat("files_skipped")
             return None
         
         # Parse the file
         file_info = self.parser.parse_file(file_path)
         if not file_info:
+            if progress:
+                progress.increment_stat("files_skipped")
             return None
         
         # Update stats
         self._stats["total_files"] += 1
         self._stats["total_lines"] += file_info.line_count
         self._stats["languages"][language] = self._stats["languages"].get(language, 0) + 1
+        
+        if progress:
+            progress.increment_stat("files_indexed")
+            progress.increment_stat("total_lines", file_info.line_count)
         
         return TreeNode(
             name=file_path.name,
@@ -320,3 +342,118 @@ class CodeIndexer:
         """Load index from a JSON file."""
         with open(index_path, "r", encoding="utf-8") as f:
             return CodeIndex.from_json(f.read())
+    
+    def build_index_incremental(self, repo_path: Path, incremental_indexer, progress=None) -> CodeIndex:
+        """Build index incrementally, only re-indexing changed files."""
+        from .incremental import IncrementalIndexer
+        
+        repo_path = Path(repo_path).resolve()
+        
+        # Load existing index
+        index_path = repo_path / ".codetree" / "index.json"
+        if not index_path.exists():
+            if progress:
+                progress.warning("No existing index found, building full index...")
+            return self.build_index(repo_path, progress)
+        
+        if progress:
+            progress.info("Loading existing index...")
+        
+        old_index = self.load_index(index_path)
+        incremental_indexer.load_metadata()
+        
+        # Collect all code files
+        all_files = []
+        for ext_list in LANGUAGE_EXTENSIONS.values():
+            for ext in ext_list:
+                all_files.extend(repo_path.rglob(f"*{ext}"))
+        
+        # Filter out excluded files
+        all_files = [f for f in all_files if not self._should_exclude(f, repo_path)]
+        
+        # Find changed and deleted files
+        changed_files, deleted_files = incremental_indexer.get_changed_files(all_files)
+        
+        if not changed_files and not deleted_files:
+            if progress:
+                progress.success("No changes detected, using existing index")
+            return old_index
+        
+        if progress:
+            progress.info(f"Found {len(changed_files)} changed files, {len(deleted_files)} deleted files")
+            progress.start(total=len(changed_files), description="Re-indexing changed files...")
+        
+        # Re-index changed files
+        self._stats = {
+            "total_files": old_index.total_files,
+            "total_lines": old_index.total_lines,
+            "languages": old_index.languages.copy(),
+        }
+        
+        changed_nodes = {}
+        for file_path in changed_files:
+            node = self._index_file(file_path, repo_path, progress)
+            if node:
+                relative_path = str(file_path.relative_to(repo_path))
+                changed_nodes[relative_path] = node
+                incremental_indexer.update_file_metadata(file_path)
+        
+        # Remove deleted files from metadata
+        for deleted_path in deleted_files:
+            incremental_indexer.remove_file_metadata(deleted_path)
+        
+        if progress:
+            progress.finish()
+            progress.info("Merging changes into index tree...")
+        
+        # Merge changes into old index tree
+        new_root = self._merge_changes(old_index.root, changed_nodes, set(deleted_files), repo_path)
+        
+        return CodeIndex(
+            root=new_root,
+            repo_path=str(repo_path),
+            created_at=old_index.created_at,
+            total_files=self._stats["total_files"],
+            total_lines=self._stats["total_lines"],
+            languages=self._stats["languages"],
+        )
+    
+    def _merge_changes(
+        self,
+        old_node: TreeNode,
+        changed_nodes: dict[str, TreeNode],
+        deleted_paths: set[str],
+        repo_path: Path,
+    ) -> TreeNode:
+        """Merge changed/deleted files into existing tree."""
+        if old_node.type == "file":
+            # Check if this file was changed or deleted
+            if old_node.path in deleted_paths:
+                return None
+            if old_node.path in changed_nodes:
+                return changed_nodes[old_node.path]
+            return old_node
+        
+        # Directory node - recursively merge children
+        new_children = []
+        for child in old_node.children:
+            merged_child = self._merge_changes(child, changed_nodes, deleted_paths, repo_path)
+            if merged_child:
+                new_children.append(merged_child)
+        
+        # Add any new files in this directory
+        dir_path = repo_path / old_node.path if old_node.path else repo_path
+        for changed_path, changed_node in changed_nodes.items():
+            node_dir = str(Path(changed_path).parent)
+            if node_dir == old_node.path or (not old_node.path and not Path(changed_path).parent.parts):
+                # This changed file belongs to this directory
+                if not any(c.path == changed_path for c in new_children):
+                    new_children.append(changed_node)
+        
+        return TreeNode(
+            name=old_node.name,
+            type="directory",
+            path=old_node.path,
+            children=new_children,
+            file_count=sum(1 if c.type == "file" else c.file_count for c in new_children),
+        )
